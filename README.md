@@ -1,5 +1,5 @@
 # beadpy
-## Flow stretching single molecule data analysis pipeline.
+## Flow stretching data analysis pipeline.
 
 Flynn Hill, flynn@uow.edu.au
 
