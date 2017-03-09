@@ -97,7 +97,7 @@ def ratefinder(restable, segtable, sigmaval = 300):
                         & (mergedfiltresults['time'] <= mergedfiltresults['x2'])]
 							 
     #Do change point analysis on these events:						 
-    segmentsfine = segments_finder(finefiltresults,sigmaval)
+    segmentsfine = beadpy.segments_finder(finefiltresults,sigmaval)
     return segmentsfine;
 	
 
