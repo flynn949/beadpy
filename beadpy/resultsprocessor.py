@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame, Series
 import matplotlib.pyplot as plt
+from itertools import chain
 
 def drift_subtractor(resultstable):
 	resultstable.rename(columns={'particle':'trajectory'}, inplace=True)
