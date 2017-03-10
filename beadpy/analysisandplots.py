@@ -107,26 +107,26 @@ def ratehist(segtable, minimumrate = 5,  maximumrate = 1000, numbins = 50, weigh
     ax = fig.add_subplot(111)
     x = segtable[(segtable['rate'] > minimumrate) & (segtable['rate'] < maximumrate)]
     if weighting == 'none':
-        n, bins, patches = P.hist(x.rate, bins = numbins)
+        n, bins, patches = P.hist(x.rate, bins = numbins, edgecolor = 'black')
         P.text(0.95, 0.95, str(len(x)) + ' segments \n' + 'from ' + str(x.trajectory.nunique()) + ' events',
         verticalalignment='top', horizontalalignment='right',
         color='magenta', fontsize=15, transform=ax.transAxes)
     elif weighting == 'fastest':
         xgrouped = x.groupby(['trajectory'])
         maxrates = xgrouped['rate'].max()
-        n, bins, patches = P.hist(maxrates, bins = numbins)
+        n, bins, patches = P.hist(maxrates, bins = numbins, edgecolor = 'black')
         P.text(0.95, 0.95, str(x.trajectory.nunique()) + ' events',
         verticalalignment='top', horizontalalignment='right',
         color='magenta', fontsize=15, transform=ax.transAxes)
     elif weighting == 'longest':
         xgrouped = x.groupby(['trajectory'])
         x = xgrouped.apply(lambda g: g[g['displacement'] == g['displacement'].max()])
-        n, bins, patches = P.hist(x.rate, bins = numbins)
+        n, bins, patches = P.hist(x.rate, bins = numbins, edgecolor = 'black')
         P.text(0.95, 0.95, str(x.trajectory.nunique()) + ' events',
         verticalalignment='top', horizontalalignment='right',
         color='magenta', fontsize=15, transform=ax.transAxes)
     else:
-        n, bins, patches = P.hist(x.rate, bins = numbins, weights = x[weighting]/sum(x[weighting]), normed = 1)
+        n, bins, patches = P.hist(x.rate, bins = numbins, weights = x[weighting]/sum(x[weighting]), normed = 1, edgecolor = 'black')
         P.text(0.95, 0.95, str(len(x)) + ' segments \n' + 'from ' + str(x.trajectory.nunique()) + ' events',
         verticalalignment='top', horizontalalignment='right',
         color='magenta', fontsize=15, transform=ax.transAxes)
@@ -165,7 +165,7 @@ def processivity(segtable, minimumprocessivity = 0, maximumprocessivity=15000, b
 	
     xdata = np.linspace(xdata[0], xdata[-1],100)
     yfit = fitfunc(xdata, popt[0], popt[1])
-    l = ax.plot(xdata, yfit, linewidth=5,color="magenta")	
+    l = ax.plot(xdata, yfit, linewidth=5,color="magenta", edgecolor = 'black')	
 
     plt.text(0.95, 0.95, r'$y = $' + str(popt[0].round(2))+ r'$\ast\mathrm{exp}(-x/$'+str((popt[1].round(2))) + r'$)$' + '\n' + r'$N = $' + str(len(x)) + ' trajectories',
         verticalalignment='top', horizontalalignment='right',
