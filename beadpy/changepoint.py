@@ -7,6 +7,7 @@ from scipy.optimize import minimize, minimize_scalar, rosen, rosen_der, brentq, 
 import numba
 from numba import jit
 import math
+import beadpy
 
 @jit
 def lsq(x,y):
@@ -42,6 +43,7 @@ Returns
 -------
 The combined sum of squares for the pair of least squares linear fits.
 """
+
 def confidenceThreshold( N, OneMa = 0.99):
     N = float(N)
     num1 = np.log(N)
@@ -51,7 +53,7 @@ def confidenceThreshold( N, OneMa = 0.99):
     pfunc = lambda p: ((p * p)/2.) * np.exp(-(p * p)/2.) * (T - (2. * T)/(p * p) + 4./(p * p)) + OneMa - 1.
     root = brentq(pfunc, 3.5, 5)
     return root
-	
+
 """ Calculates the critical value at a given confidence level and number of data points for the stastical significance of a log likelihood ratio of a two line fit versus a single line fit.
 
 Parameters
