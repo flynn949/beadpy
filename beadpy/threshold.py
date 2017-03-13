@@ -1,4 +1,4 @@
-from scipy.optimize import brent
+from scipy.optimize import brentq
 import numpy as np
 
 def confidenceThreshold( N, OneMa = 0.99):
