@@ -6,6 +6,7 @@ from scipy import linalg, optimize
 from scipy.optimize import minimize, minimize_scalar, rosen, rosen_der, brentq, fminbound, curve_fit
 import numba
 from numba import jit
+import math
 
 @jit
 def lsq(x,y):
@@ -41,15 +42,15 @@ Returns
 -------
 The combined sum of squares for the pair of least squares linear fits.
 """
-#Moved to a separate file 'threhold.py'
-# def confidenceThreshold( N, OneMa = 0.99):
-    # N = float(N)
-    # h = ((np.log(N))**(3/2))/N
-    # T = np.log((1-h * h)/(h * h))
-    # pfunc = lambda p: ((p * p)/2) * np.exp(-(p * p)/2) * (T - (2 * T)/(p * p) + 4/(p * p)) + OneMa - 1
-    # root = brentq(pfunc, 3.5, 5)
-    # return root;
-	
+def confidenceThreshold( N, OneMa = 0.99):
+    N = float(N)
+    num1 = np.log(N)
+    num2 = math.pow(num1, (3./2.))
+    h = num2/N
+    T = np.log((1.-h * h)/(h * h))
+    pfunc = lambda p: ((p * p)/2.) * np.exp(-(p * p)/2.) * (T - (2. * T)/(p * p) + 4./(p * p)) + OneMa - 1.
+    root = brentq(pfunc, 3.5, 5)
+    return root
 	
 """ Calculates the critical value at a given confidence level and number of data points for the stastical significance of a log likelihood ratio of a two line fit versus a single line fit.
 
@@ -97,7 +98,7 @@ def changePoint(array, startX, endX, offset, sigma, OneMa):
             
         minll = loglik(a, leng, mini.fun, sigma)
 
-        if ((-2 * float(minll))**0.5) > beadpy.confidenceThreshold(leng, OneMa):
+        if ((-2 * float(minll))**0.5) > confidenceThreshold(leng, OneMa):
             chpt = int(np.abs(array[:,1]-mini.x).argmin() + offset - 1)
                     
         else:
