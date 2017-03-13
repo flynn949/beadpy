@@ -46,7 +46,7 @@ The combined sum of squares for the pair of least squares linear fits.
 
 def confidenceThreshold( N, OneMa = 0.99):
     if (N > 2) & (N < 2000) & (OneMa == 0.99):
-        root = confidencevals[N]
+        root = confidencevals[int(N)]
     else:
         N = float(N)
         num1 = np.log(N)
