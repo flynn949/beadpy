@@ -189,9 +189,6 @@ def binary_search(array, offset, length, sigma, OneMa):
                 cp_positions.insert(q + 1, cp)
                 q += 1
     
-    if(len(cp_positions) < 2):
-        cp_positions = []
-    
     if not cp_positions:
         return 0;
     else:
@@ -216,7 +213,7 @@ Returns
 -------
 Line segments with all the information given by bead.linefit, each defined by the consecutive changepoint boundaries.
 """	
-	
+
 
 def segments_finder(restable, sigma):
     
@@ -234,7 +231,11 @@ def segments_finder(restable, sigma):
     
     cptable = []
     for i in range(first, last):
-        temp = binary_search(resultsarray, indextable[1][i], indextable[2][i], float(sigma), 0.99)
+        if type(sigma)==list:
+            sigmaval = sigma[i]
+        else:
+            sigmaval = sigma
+        temp = binary_search(resultsarray, indextable[1][i], indextable[2][i], float(sigmaval), 0.99)
         if temp != 0:
             cptable.append(temp)
         del temp
@@ -249,23 +250,40 @@ def segments_finder(restable, sigma):
     segmentstable = pd.concat(appended_data, axis=0)
     segmentstable = segmentstable.round(decimals)
     
-    segmentstable.to_csv('pythonsegments_sigma'+str(sigma)+'.csv', index = False)
+    if type(sigma)==list:
+        segmentstable.to_csv('pythonsegments_autosigma.csv', index = False)
+    else:
+        segmentstable.to_csv('pythonsegments_sigma'+str(sigma)+'.csv', index = False)
 
     return segmentstable;
-	
-""" Generates a changepoint segment table for all the trajectories in a Pandas results table.
+    
+    
+def sigmaval_finder(restable, sigma_start = 0, sigma_end = 150):
+    restable = restable.reset_index(drop=True)
+    sigmaregion = restable[(restable.time > sigma_start) & (restable.time < sigma_end)]
+    sigmavals = sigmaregion.groupby('trajectory')['nucleotides'].apply(lambda x:x.rolling(center=False,window=20).std().mean())
+    trajectories = sigmavals.index.tolist()
+    sigmavals = sigmavals.tolist()
 
-Parameters
-----------
-restable: A pandas results array containing trajectory, time and nucleotides columns.
-sigma: The user-defined noise level.
+    return sigmavals, trajectories;
+    
+def ratefinder_autosigma(restable, segtable, sigma_start, sigma_end):
 
-Returns
--------
-A segments table containing information about all the changepoint-defined line segments for all the trajectories in the results table.
-
-"""
-
+    restable = restable[restable.trajectory.isin(segtable.trajectory)]
+    sigmavals, trajectories = sigmaval_finder(restable, sigma_start, sigma_end)
+    restable = restable[restable.trajectory.isin(trajectories)]
+    segtable = segtable[segtable.trajectory.isin(trajectories)]
+    
+    groupedsegs = segtable.groupby(['trajectory'], as_index=False)    
+    starttimes = groupedsegs['x1'].min()
+    endtimes = groupedsegs['x2'].max()    
+    startendtimes = pd.merge(left=starttimes, right = endtimes, how='left', left_on='trajectory', right_on='trajectory')
+    mergedfiltresults = pd.merge(left=restable,right=startendtimes, how='left', left_on='trajectory', right_on='trajectory')
+    finefiltresults = mergedfiltresults[(mergedfiltresults['time'] >= mergedfiltresults['x1'])
+                        & (mergedfiltresults['time'] <= mergedfiltresults['x2'])]
+    segmentsfine = segments_finder(finefiltresults, sigmavals)
+    return segmentsfine;
+    
 def segments_finder_singletraj(traj, restable, sigma):    
     restable = restable[restable['trajectory']==traj]
     restable = restable.reset_index(drop=True)
@@ -280,6 +298,7 @@ def segments_finder_singletraj(traj, restable, sigma):
     segmentstable = DataFrame(cptable, columns = collist)
     segmentstable = segmentstable.round(decimals)
     return segmentstable;
+    
     
 confidencevals = [
 1000.0
