@@ -20,7 +20,8 @@ def drift_subtractor(resultstable):
 	 'slice' : Series(range(0,1 + resultstable['slice'].idxmax())),
 	 'xdrift' : driftx,
 	 'ydrift' : drifty
-	 })
+	})
+	drift.to_csv("drift.csv")
 	mergedresults = pd.merge(left=resultstable,right=drift, how='left', left_on='slice', right_on='slice')
 	mergedresults = mergedresults.sort_values(by=['trajectory', 'slice'])
 	mergedresults['x3'] = mergedresults['x2'] - mergedresults['xdrift']

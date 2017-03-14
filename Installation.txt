@@ -1,0 +1,45 @@
+1) Install Anaconda. Either Python 2.x or 3.x can be chosen. I use 2.x.
+2) Open a command prompt/terminal and do the following:
+
+conda update conda
+conda install ipyparallel
+conda install numba
+conda install -c conda-forge trackpy
+
+3) Install beadpy. Go to github.com/flynn949/beadpy. Click on 'clone or download' and download a zip of the package.
+
+Extract the zip. You should now have a folder called beadpy-master.
+
+In the command prompt, navigate to /beadpy-master/beadpy-master. This should contain a file called setup.py, and a folder called beadpy along with some other files.
+
+Type the following command to build the package:
+
+python setup.py sdist
+
+Now navigate into the newly created dist folder. It will contain a file called either beadpy-0.2.tar.gz or beadpy-0.2.zip, depending on your system. Type the following command, substituting .zip if necessary:
+
+python -m pip install beadpy-0.2.tar.gz
+
+Beadpy should now be installed, and can be used within python by typing 'import beadpy'.
+
+(If you need to uninstall beadpy: python -m pip uninstall beadpy)
+
+4) Using the Jupter Notebook.
+
+Inside the beadpy-master folder, there should be a file called BeadAnalysis.ipynb and one called parameters.py. Copy these files into a working directory. Open a command prompt/terminal in that directory and type the following:
+
+jupyter notebook
+
+A notebook should open a home page in your web browser. You can now click on BeadAnalysis.ipynb in the home page. Have a look at the notebook, and when you are ready to start working on your own data do this: 
+
+cell menu > all output > clear
+
+Now take a look at the parameters file in a text editor. It contains all the experimental parameters which you can set prior to runnin the analysis. Most importantly, this includes the path to the image sequence (which can be a tiff/png/whatever stack or even a streampix .seq file), as well as exposure time and cropping parameters. You have the option of choosing 'streaming' or 'parallel' for processing your data. On a normal desktop computer it is probably best to choose streaming. If you have a workstation with a Xeon processor or similar (i.e. 10-20 core machine), 'parallel' is the best choice.
+
+If running analysis in parallel, open another command prompt and type the following:
+
+ipcluster start -n X
+
+where X is the number of cores you wish to use.
+
+If all the parameters in the notebook have been set, you can click on the first cell and choose Cell > Run all Below. Otherwise, to run the commands cell-by-cell, you can click each cell and press control + enter. 

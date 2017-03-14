@@ -134,11 +134,10 @@ def ratehist(segtable, minimumrate = 5,  maximumrate = 1000, numbins = 50, weigh
     P.xlabel('Rate (nt/s)')
     P.savefig('rates.png', dpi = 300)
 	
-	
+	   
 def processivity(segtable, minimumprocessivity = 0, maximumprocessivity=15000, binno = 15, skipno = 0, initialguesses = 'default'):
     fig = plt.figure()
-    ax = plt.subplot(111)
-	
+    ax = fig.add_subplot(111)
     groupedsegs = segtable.groupby(['trajectory'], as_index=False)
     starty = groupedsegs['y1'].min()
     endy = groupedsegs['y2'].max()
@@ -149,7 +148,7 @@ def processivity(segtable, minimumprocessivity = 0, maximumprocessivity=15000, b
 	#binno = math.sqrt(eventno)
     x = displacements['displacement'][(displacements.displacement > 0) & (displacements.displacement < 21000)]
 	
-    n, bins, patches = P.hist(x, bins = int(binno))
+    n, bins, patches = P.hist(x, bins = int(binno),edgecolor = 'black')
 	
     ydata = n[skipno - binno:]
     binwidth = bins[1]-bins[0]
@@ -159,18 +158,18 @@ def processivity(segtable, minimumprocessivity = 0, maximumprocessivity=15000, b
     if initialguesses == 'default':
         initialguesses = [10,5000]
     popt, pcov = curve_fit(fitfunc, xdata, ydata, p0 = initialguesses)
-	
-    plt.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
-    plt.xlabel('Total processivity (nt)')
-	
+
     xdata = np.linspace(xdata[0], xdata[-1],100)
     yfit = fitfunc(xdata, popt[0], popt[1])
-    l = ax.plot(xdata, yfit, linewidth=5,color="magenta", edgecolor = 'black')	
+    l = ax.plot(xdata, yfit, linewidth=5,color="magenta")	
 
-    plt.text(0.95, 0.95, r'$y = $' + str(popt[0].round(2))+ r'$\ast\mathrm{exp}(-x/$'+str((popt[1].round(2))) + r'$)$' + '\n' + r'$N = $' + str(len(x)) + ' trajectories',
+    P.text(0.95, 0.95, r'$y = $' + str(popt[0].round(2))+ r'$\ast\mathrm{exp}(-x/$'+str((popt[1].round(2))) + r'$)$' + '\n' + r'$N = $' + str(len(x)) + ' trajectories',
         verticalalignment='top', horizontalalignment='right',
         transform=ax.transAxes,
-        color='magenta', fontsize=15)		
-	
+        color='magenta', fontsize=15)
+    plt.setp(patches, 'facecolor', 'g', 'alpha', 0.75)     
+    P.xlabel('Total processivity (nt)')
+    P.show()
     plt.savefig('processivity.png', dpi = 300)
+	
 	
