@@ -9,6 +9,18 @@ from numba import jit
 import math
 import beadpy
 
+import numpy as np
+import pandas as pd
+from pandas import DataFrame, Series
+import scipy as sp
+from scipy import linalg, optimize
+from scipy.optimize import minimize, minimize_scalar, rosen, rosen_der, brentq, fminbound, curve_fit
+import numba
+from numba import jit
+import math
+import beadpy
+
+
 @jit
 def lsq(x,y):
     return np.linalg.lstsq(np.vstack([x, np.ones(len(x))]).T, y)[1][0];
@@ -27,8 +39,8 @@ The sum of squares for the least squares linear fit.
 	
 @jit
 def ss2lines(j, a):
-    segA = lsq(a[:,1][a[:,1]<j], a[:,0][a[:,1]<j])
-    segB = lsq(a[:,1][a[:,1]>j], a[:,0][a[:,1]>j])
+    segA = lsq(a[:,0][a[:,0]<j], a[:,1][a[:,0]<j])
+    segB = lsq(a[:,0][a[:,0]>j], a[:,1][a[:,0]>j])
     out = segA + segB
     return out;
 	
@@ -72,7 +84,7 @@ The critical value.
 	
 @jit
 def loglik(a, leng, ssval, sigma):
-    segnull = lsq(a[:,1], a[:,0])
+    segnull = lsq(a[:,0], a[:,1])
     llnull = leng * np.log(1/sigma * 2.506628275) - segnull/(2 * sigma * sigma)
     ll2lines = leng * np.log(1/sigma * 2.506628275) - ssval/(2 * sigma * sigma)
     loglik = -1 * (ll2lines - llnull)
@@ -98,13 +110,13 @@ def changePoint(array, startX, endX, offset, sigma, OneMa):
     a = array[startX - offset:endX - offset]
     leng = len(a)
     if (leng > 15):
-        mini = minimize_scalar(ss2lines, bounds =((a[:,1][3]), (a[:,1][-3])), 
+        mini = minimize_scalar(ss2lines, bounds =((a[:,0][3]), (a[:,0][-3])), 
                                    method='bounded', args=(a))
             
         minll = loglik(a, leng, mini.fun, sigma)
 
         if ((-2 * float(minll))**0.5) > confidenceThreshold(leng, OneMa):
-            chpt = int(np.abs(array[:,1]-mini.x).argmin() + offset - 1)
+            chpt = int(np.abs(array[:,0]-mini.x).argmin() + offset - 1)
                     
         else:
             chpt = -1
@@ -130,14 +142,14 @@ If the changepoint passes the significance test, the changepoint is returned as 
 	
 @jit
 def linefit(array, cp1, cp2):
-    x = array[cp1:cp2][:,1]
-    y = array[cp1:cp2][:,0]
+    x = array[cp1:cp2][:,0]
+    y = array[cp1:cp2][:,1]
     a = np.vstack([x, np.ones(len(x))]).T
     m, c = np.linalg.lstsq(a, y)[0]
-    x1 = array[:,1][cp1]
-    x2 = array[:,1][cp2]
-    y1 = (array[:,1][cp1] * m) + c
-    y2 =(array[:,1][cp2] * m) + c
+    x1 = array[:,0][cp1]
+    x2 = array[:,0][cp2]
+    y1 = (array[:,0][cp1] * m) + c
+    y2 =(array[:,0][cp2] * m) + c
     displacement = y2 - y1
     duration = x2 - x1
     trajectorynumber = array[:,2][cp1]
@@ -198,48 +210,50 @@ def binary_search(array, offset, length, sigma, OneMa):
         line_fits.pop(0)
         
     return line_fits;
-
-""" Searches for changepoints in a given trajectory, following the binary segmentation approach, with a refinement step.
-
-Parameters
-----------
-array: An array containing time in column 1 and nucleotides/position in column 0.
-offset: the index value of the first row of the trajectory.
-length: the number of rows in the trajectory.
-sigma: The user-defined noise level.
-OneMa: The confidence level.
-
-Returns
--------
-Line segments with all the information given by bead.linefit, each defined by the consecutive changepoint boundaries.
-"""	
-
-
-def segments_finder(restable, sigma):
     
-    restable = restable.reset_index(drop=True)
-    resultslite = DataFrame({
-        'trajectory' : restable.trajectory,
-        'time' : restable.time,
-        'nucleotides' : restable.nucleotides})
+def segment_finder(datatable, xcolumn = 'time', ycolumn = 'nucleotides', indexcolumn = 'trajectory', sigma_start = 0, sigma_end = 100, sigma = 500, method = 'global', traj = 'none'):
     
-    resultsarray = resultslite.as_matrix(columns = [resultslite.columns[0:3]])
-    indextable = np.unique(resultslite.trajectory, return_index=True, return_counts=True)
+    datatable = datatable.reset_index(drop=True)
     
+    if isinstance(traj, int):
+        datatable = datatable[datatable[indexcolumn]==traj]
+       
+    if indexcolumn == 'none':
+        a = datatable.as_matrix(columns = [xcolumn, ycolumn])
+        resultsarray = np.hstack((a, np.atleast_2d(np.zeros(len(a))).T)) #Adds an index column filled with zeroes when there is only one trajectory.
+        datatable['trajectory'] = 0
+        indexcolumn = 'trajectory'
+    else:
+        resultsarray = datatable.as_matrix(columns = [xcolumn, ycolumn, indexcolumn])
+   
+    indextable = np.unique(datatable[indexcolumn], return_index=True, return_counts=True)
+    
+    if method == 'auto':
+        sigmaregion = datatable[(datatable[xcolumn] > sigma_start) & (datatable[xcolumn] < sigma_end)]
+        datatable = datatable[datatable[indexcolumn].isin(sigmaregion[indexcolumn])]
+        resultsarray = datatable.as_matrix(columns = [xcolumn, ycolumn, indexcolumn])
+        sigmavals = sigmaregion.groupby(indexcolumn)[ycolumn].apply(lambda x:x.rolling(center=False,window=20).std().mean())
+        trajectories = sigmavals.index.tolist()
+        sigmalist = sigmavals.tolist()
+        
+    if isinstance(sigma, list): #allows an externally provided list of sigma values, method should be specified as global.
+        method = 'auto'
+        sigmalist = sigma
+        
     first = 0
-    last = resultslite.trajectory.nunique()
+    last = len(np.unique(resultsarray[:,2]))
     
     cptable = []
     for i in range(first, last):
-        if type(sigma)==list:
-            sigmaval = sigma[i]
-        else:
+        if method == 'auto':
+            sigmaval = sigmalist[i]
+        if method == 'global':
             sigmaval = sigma
         temp = binary_search(resultsarray, indextable[1][i], indextable[2][i], float(sigmaval), 0.99)
         if temp != 0:
             cptable.append(temp)
         del temp
-    
+        
     collist = ['rate', 'intercept', 'x1', 'x2', 'y1', 'y2', 'displacement', 'duration', 'trajectory']
     decimals = pd.Series([1,0,2,2,1,1,1,2,0], index = collist)
     
@@ -250,53 +264,17 @@ def segments_finder(restable, sigma):
     segmentstable = pd.concat(appended_data, axis=0)
     segmentstable = segmentstable.round(decimals)
     
-    if type(sigma)==list:
-        segmentstable.to_csv('pythonsegments_autosigma.csv', index = False)
+    if (isinstance(traj, int)) & (isinstance(sigma, int)):
+        segmentstable.to_csv("segments_traj"+str(traj)+"_sigma_"+str(sigma)+".csv", index = False)
+    elif (isinstance(traj, int)) & (not isinstance(sigma, int)):
+        segmentstable.to_csv("segments_autosigma_traj"+str(traj)+".csv", index = False)
+    elif isinstance(sigma, list):
+        segmentstable.to_csv("segments_events.csv", index = False)   
+    elif (isinstance(sigma, int)) & (not isinstance(traj, int)):
+        segmentstable.to_csv('segments_sigma'+str(sigma)+'.csv', index = False)
     else:
-        segmentstable.to_csv('pythonsegments_sigma'+str(sigma)+'.csv', index = False)
+        segmentstable.to_csv('segments_autosigma.csv', index = False)
 
-    return segmentstable;
-    
-    
-def sigmaval_finder(restable, sigma_start = 0, sigma_end = 150):
-    restable = restable.reset_index(drop=True)
-    sigmaregion = restable[(restable.time > sigma_start) & (restable.time < sigma_end)]
-    sigmavals = sigmaregion.groupby('trajectory')['nucleotides'].apply(lambda x:x.rolling(center=False,window=20).std().mean())
-    trajectories = sigmavals.index.tolist()
-    sigmavals = sigmavals.tolist()
-
-    return sigmavals, trajectories;
-    
-def ratefinder_autosigma(restable, segtable, sigma_start, sigma_end):
-
-    restable = restable[restable.trajectory.isin(segtable.trajectory)]
-    sigmavals, trajectories = sigmaval_finder(restable, sigma_start, sigma_end)
-    restable = restable[restable.trajectory.isin(trajectories)]
-    segtable = segtable[segtable.trajectory.isin(trajectories)]
-    
-    groupedsegs = segtable.groupby(['trajectory'], as_index=False)    
-    starttimes = groupedsegs['x1'].min()
-    endtimes = groupedsegs['x2'].max()    
-    startendtimes = pd.merge(left=starttimes, right = endtimes, how='left', left_on='trajectory', right_on='trajectory')
-    mergedfiltresults = pd.merge(left=restable,right=startendtimes, how='left', left_on='trajectory', right_on='trajectory')
-    finefiltresults = mergedfiltresults[(mergedfiltresults['time'] >= mergedfiltresults['x1'])
-                        & (mergedfiltresults['time'] <= mergedfiltresults['x2'])]
-    segmentsfine = segments_finder(finefiltresults, sigmavals)
-    return segmentsfine;
-    
-def segments_finder_singletraj(traj, restable, sigma):    
-    restable = restable[restable['trajectory']==traj]
-    restable = restable.reset_index(drop=True)
-    resultslite = DataFrame({
-        'trajectory' : restable['trajectory'],
-        'time' : restable['time'],
-        'nucleotides' : restable['nucleotides']})
-    resultsarray = resultslite.as_matrix(columns = [resultslite.columns[0:3]])
-    cptable = binary_search(resultsarray, 0, len(resultsarray), float(sigma), 0.99)
-    collist = ['rate', 'intercept', 'x1', 'x2', 'y1', 'y2', 'displacement', 'duration', 'trajectory']
-    decimals = pd.Series([1,0,2,2,1,1,1,2,0], index = collist)
-    segmentstable = DataFrame(cptable, columns = collist)
-    segmentstable = segmentstable.round(decimals)
     return segmentstable;
     
     

@@ -59,6 +59,7 @@ def filterer(resultstable, segmentstable, minrate, maxrate, mindisplacement, sta
 	
 
 def trajectory_plotter(resultstable, exampletraj, sigmaval):
+        exampletraj = int(exampletraj)
         fig, ax = plt.subplots(figsize = (10, 7.5))
         ax.plot(resultstable['time'][resultstable['trajectory'] == exampletraj],
                                         resultstable['nucleotides'][resultstable['trajectory'] == exampletraj]/1000,
@@ -69,7 +70,7 @@ def trajectory_plotter(resultstable, exampletraj, sigmaval):
         ax.set_ylim((-0.5 + resultstable['nucleotides'][resultstable['trajectory'] == exampletraj].min()/1000,0.5 + resultstable['nucleotides'][resultstable['trajectory'] == exampletraj].max()/1000))                                              
         if sigmaval > 10:
             fig.suptitle('Trajectory '+str(exampletraj)+', sigma '+str(sigmaval), fontsize = 16)
-            exampletrajseg = beadpy.segments_finder_singletraj(exampletraj, resultstable, sigmaval)
+            exampletrajseg = beadpy.segment_finder(resultstable, sigma = sigmaval, traj = exampletraj)
             for row_index, row in exampletrajseg[exampletrajseg.trajectory==exampletraj].iterrows():
                 ax.plot([row['x1'], row['x2']], [row['y1']/1000, row['y2']/1000],'k-', lw=2, color='Magenta', linestyle='-')
         else:
@@ -97,7 +98,33 @@ def ratefinder(restable, segtable, sigmaval = 300):
                         & (mergedfiltresults['time'] <= mergedfiltresults['x2'])]
 							 
     #Do change point analysis on these events:						 
-    segmentsfine = beadpy.segments_finder(finefiltresults,sigmaval)
+    segmentsfine = beadpy.segment_finder(finefiltresults, sigma = sigmaval)
+    return segmentsfine;
+    
+def sigmaval_finder(restable, sigma_start = 0, sigma_end = 150):
+    restable = restable.reset_index(drop=True)
+    sigmaregion = restable[(restable.time > sigma_start) & (restable.time < sigma_end)]
+    sigmavals = sigmaregion.groupby('trajectory')['nucleotides'].apply(lambda x:x.rolling(center=False,window=20).std().mean())
+    sigmavals = sigmavals[np.logical_not(np.isnan(sigmavals))]
+    trajectories = sigmavals.index.tolist()
+    sigmavals = sigmavals.tolist()
+    return sigmavals, trajectories;
+    
+def ratefinder_autosigma(restable, segtable, sigma_start, sigma_end):
+
+    restable = restable[restable.trajectory.isin(segtable.trajectory)]
+    sigmavals, trajectories = sigmaval_finder(restable, sigma_start, sigma_end)
+    restable = restable[restable.trajectory.isin(trajectories)]
+    segtable = segtable[segtable.trajectory.isin(trajectories)]
+    
+    groupedsegs = segtable.groupby(['trajectory'], as_index=False)    
+    starttimes = groupedsegs['x1'].min()
+    endtimes = groupedsegs['x2'].max()    
+    startendtimes = pd.merge(left=starttimes, right = endtimes, how='left', left_on='trajectory', right_on='trajectory')
+    mergedfiltresults = pd.merge(left=restable,right=startendtimes, how='left', left_on='trajectory', right_on='trajectory')
+    finefiltresults = mergedfiltresults[(mergedfiltresults['time'] >= mergedfiltresults['x1'])
+                        & (mergedfiltresults['time'] <= mergedfiltresults['x2'])]
+    segmentsfine = beadpy.segment_finder(finefiltresults, sigma = sigmavals)
     return segmentsfine;
 	
 
