@@ -9,17 +9,6 @@ from numba import jit
 import math
 import beadpy
 
-import numpy as np
-import pandas as pd
-from pandas import DataFrame, Series
-import scipy as sp
-from scipy import linalg, optimize
-from scipy.optimize import minimize, minimize_scalar, rosen, rosen_der, brentq, fminbound, curve_fit
-import numba
-from numba import jit
-import math
-import beadpy
-
 
 @jit
 def lsq(x,y):
