@@ -58,7 +58,7 @@ def filterer(resultstable, segmentstable, minrate, maxrate, mindisplacement, sta
     return filtresults, filtsegments;
 	
 
-def trajectory_plotter(resultstable, exampletraj, sigmaval):
+def trajectory_plotter(resultstable, exampletraj, sigmaval, sigma_start = 10, sigma_end = 100):
         exampletraj = int(exampletraj)
         fig, ax = plt.subplots(figsize = (10, 7.5))
         ax.plot(resultstable['time'][resultstable['trajectory'] == exampletraj],
@@ -68,16 +68,26 @@ def trajectory_plotter(resultstable, exampletraj, sigmaval):
         ax.set_ylabel("Nucleotides synthesised (kb)", fontsize=16)              
         ax.set_xlim((-50,resultstable['time'][resultstable['trajectory'] == exampletraj].max()+50))
         ax.set_ylim((-0.5 + resultstable['nucleotides'][resultstable['trajectory'] == exampletraj].min()/1000,0.5 + resultstable['nucleotides'][resultstable['trajectory'] == exampletraj].max()/1000))                                              
-        if sigmaval > 10:
-            fig.suptitle('Trajectory '+str(exampletraj)+', sigma '+str(sigmaval), fontsize = 16)
-            exampletrajseg = beadpy.segment_finder(resultstable, sigma = sigmaval, traj = exampletraj)
+        if not sigmaval < 10:
+            if (isinstance(sigmaval, int)):
+                exampletrajseg = beadpy.segment_finder(resultstable, sigma = sigmaval, traj = exampletraj)            
+            elif sigmaval == 'auto':
+                exampletrajseg, sigmaval = beadpy.segment_finder(resultstable, method = 'auto', traj = int(exampletraj), returnsigma = 'yes', sigma_start = sigma_start, sigma_end = sigma_end)
+                
+            fig.suptitle('Trajectory '+str(exampletraj)+', sigma '+str(int(sigmaval)), fontsize = 16)
             for row_index, row in exampletrajseg[exampletrajseg.trajectory==exampletraj].iterrows():
-                ax.plot([row['x1'], row['x2']], [row['y1']/1000, row['y2']/1000],'k-', lw=2, color='Magenta', linestyle='-')
+                ax.plot([row['x1'], row['x2']], [row['y1']/1000, row['y2']/1000],'k-', lw=2, color='Magenta', linestyle='-')   
+
         else:
             fig.suptitle('Trajectory '+str(exampletraj), fontsize = 16)
+            
         ax.tick_params(axis='both',  labelsize=14)                                           
-        fig.tight_layout(pad=4);               
-        fig.savefig(str(exampletraj)+'_'+str(sigmaval)+'.png', dpi = 300)
+        fig.tight_layout(pad=4)
+        
+        if not sigmaval < 10:
+            fig.savefig('traj_'+str(exampletraj)+'_sigma_'+str(sigmaval)+'.png', dpi = 300)
+        else:
+            fig.savefig('traj_'+str(exampletraj)+'.png', dpi = 300)
         return exampletrajseg
 
 def weighted_avg_and_std(values, weights):

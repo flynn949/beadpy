@@ -200,7 +200,7 @@ def binary_search(array, offset, length, sigma, OneMa):
         
     return line_fits;
     
-def segment_finder(datatable, xcolumn = 'time', ycolumn = 'nucleotides', indexcolumn = 'trajectory', sigma_start = 0, sigma_end = 100, sigma = 500, method = 'global', traj = 'none'):
+def segment_finder(datatable, xcolumn = 'time', ycolumn = 'nucleotides', indexcolumn = 'trajectory', sigma_start = 0, sigma_end = 100, sigma = 500, method = 'global', traj = 'none', returnsigma = 'no'):
     
     datatable = datatable.reset_index(drop=True)
     
@@ -253,15 +253,18 @@ def segment_finder(datatable, xcolumn = 'time', ycolumn = 'nucleotides', indexco
     segmentstable = pd.concat(appended_data, axis=0)
     segmentstable = segmentstable.round(decimals)
     
-    if (isinstance(traj, int)) & (isinstance(sigma, int)):
-        segmentstable.to_csv("segments_traj"+str(traj)+"_sigma_"+str(sigma)+".csv", index = False)
-    elif (isinstance(traj, int)) & (not isinstance(sigma, int)):
-        segmentstable.to_csv("segments_autosigma_traj"+str(traj)+".csv", index = False)
+    if (traj != 'none') & (method=='global'):
+        segmentstable.to_csv("segments_traj_"+str(traj)+"_sigma_"+str(sigma)+".csv", index = False)
+    elif (traj != 'none') & (method=='auto'):
+        segmentstable.to_csv("segments_traj_"+str(traj)+"_sigma_"+str(int(sigmalist[0]))+".csv", index = False)
     elif isinstance(sigma, list):
         segmentstable.to_csv("segments_events.csv", index = False)   
     elif (isinstance(sigma, int)) & (not isinstance(traj, int)):
         segmentstable.to_csv('segments_sigma'+str(sigma)+'.csv', index = False)
     else:
         segmentstable.to_csv('segments_autosigma.csv', index = False)
-
-    return segmentstable;
+    
+    if (returnsigma == 'yes') & (traj != 'none') & (method=='auto'):
+        return segmentstable, int(sigmalist[0])
+    else:
+        return segmentstable;
