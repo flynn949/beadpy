@@ -81,12 +81,7 @@ def trajectory_renumber(resultstable):
 	resultstable = resultstable.reset_index(drop=True)
 	return resultstable;
 	
-# def flipxy(resultstable):
-    # col_list = list(resultstable)
-    # col_list[0], col_list[1] = col_list[1],col_list[0]
-    # resultstable.columns = col_list
-    # return resultstable
-	
-# def flipx(resultstable, xwidth):
-    # resultstable['x'] = -1*resultstable.x + width
-    # return resultstable
+def flip_coordinates(resultstable, direction = 'x'):
+    maxval = results[direction].max()
+    resultstable[direction] = -1*resultstable[direction] + maxval
+    return resultstable

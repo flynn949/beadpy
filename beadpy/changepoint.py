@@ -243,6 +243,7 @@ def segment_finder(datatable, xcolumn = 'time', ycolumn = 'nucleotides', indexco
             cptable.append(temp)
         del temp
         
+        
     collist = ['rate', 'intercept', 'x1', 'x2', 'y1', 'y2', 'displacement', 'duration', 'trajectory']
     decimals = pd.Series([1,0,2,2,1,1,1,2,0], index = collist)
     
