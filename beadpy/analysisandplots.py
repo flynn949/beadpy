@@ -63,7 +63,7 @@ def filterer(resultstable, segmentstable, minrate, maxrate, mindisplacement, sta
     return filtresults, filtsegments;
 	
 
-def trajectory_plotter(resultstable, exampletraj, sigma = 500, method = ('global', 'table'), sigma_start = 10, sigma_end = 100,  eventregion = 0):
+def trajectory_plotter(resultstable, exampletraj, sigma = 500, method = ('global', 'table'), sigma_start = 10, sigma_end = 100,  eventregion = (200,500), segmenttable = 0):
         exampletraj = int(exampletraj)
         fig, ax = plt.subplots(figsize = (10, 7.5))
         ax.plot(resultstable['time'][resultstable['trajectory'] == exampletraj],
@@ -75,14 +75,14 @@ def trajectory_plotter(resultstable, exampletraj, sigma = 500, method = ('global
         ax.set_ylim((-0.5 + resultstable['nucleotides'][resultstable['trajectory'] == exampletraj].min()/1000,0.5 + resultstable['nucleotides'][resultstable['trajectory'] == exampletraj].max()/1000))                                              
         if not method == 'nofit':
             if method == ('global', 'table'):
-                exampletrajseg = beadpy.ratefinder(resultstable[resultstable['trajectory']==exampletraj], segtable = eventregion, sigmaval = sigma)
+                exampletrajseg = beadpy.ratefinder(resultstable[resultstable['trajectory']==exampletraj], segtable = segmenttable, sigmaval = sigma)
             elif method == ('global', 'region'):
                 exampletrajseg = beadpy.segment_finder(resultstable[(resultstable['time']>eventregion[0]) & (resultstable['time'] < eventregion[1])], sigma = sigma, traj = exampletraj)
             elif method == ('global', 'whole'):
                 exampletrajseg = beadpy.segment_finder(resultstable, sigma = sigma, traj = exampletraj) 
             elif method == ('auto', 'table'):
                 test, sigma = beadpy.segment_finder(resultstable, method = 'auto', traj = int(exampletraj), returnsigma = 'yes', sigma_start = sigma_start, sigma_end = sigma_end)
-                exampletrajseg = beadpy.ratefinder(resultstable[resultstable['trajectory']==exampletraj], segtable = eventregion, sigmaval = sigma)
+                exampletrajseg = beadpy.ratefinder(resultstable[resultstable['trajectory']==exampletraj], segtable = segmenttable, sigmaval = sigma)
             elif method == ('auto', 'region'):
                 test, sigma = beadpy.segment_finder(resultstable, method = 'auto', traj = int(exampletraj), returnsigma = 'yes', sigma_start = sigma_start, sigma_end = sigma_end)
                 exampletrajseg = beadpy.segment_finder(resultstable[(resultstable['time']>eventregion[0]) & (resultstable['time'] < eventregion[1])], sigma = sigma, traj = exampletraj)
@@ -104,6 +104,7 @@ def trajectory_plotter(resultstable, exampletraj, sigma = 500, method = ('global
             return exampletrajseg
         else:
             fig.savefig('traj_'+str(exampletraj)+'.png', dpi = 300)
+        
         
 
 def weighted_avg_and_std(values, weights):
