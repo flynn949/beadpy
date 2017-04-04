@@ -60,7 +60,7 @@ def spurious_removal(resultstable):
 	
 def baseline(resultstable, exposuretime):
 	resultstraj = resultstable.groupby(['trajectory'])
-	nucleotides = resultstraj['nt'].transform(lambda bzz: bzz - bzz.head(150*int(1/exposuretime)).median())
+	nucleotides = resultstraj['nt'].transform(lambda bzz: bzz - bzz.head(150*int(exposuretime)).median())
 	resultstable['nucleotides'] = nucleotides
 	del resultstable['mass'], resultstable['nt'], resultstable['x3'], resultstable['y3']
 	return resultstable;
