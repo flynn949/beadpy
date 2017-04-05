@@ -4,32 +4,34 @@ from pandas import DataFrame, Series
 import matplotlib.pyplot as plt
 from itertools import chain
 
-def drift_subtractor(resultstable):
-	resultstable.rename(columns={'particle':'trajectory'}, inplace=True)
-	resultstable.rename(columns={'frame':'slice'}, inplace=True)
-	resultstable = resultstable.sort_values(by=['trajectory', 'slice'])
-	resultstraj = resultstable.groupby(['trajectory'])
-	resultstable['x2'] = resultstraj['x'].transform(lambda bzz: bzz - bzz.mean())
-	resultstable['y2'] = resultstraj['y'].transform(lambda bzz: bzz - bzz.mean())
-	stuckslices = resultstable[resultstable['slice'] >= resultstable['slice'].max()]
-	stucktraj = resultstable[resultstable['trajectory'].isin(stuckslices['trajectory'])]
-	stuckgroupslice = stucktraj.groupby(['slice'])
-	driftx = stuckgroupslice['x2'].aggregate(np.median)
-	drifty = stuckgroupslice['y2'].aggregate(np.median)
-	drift = DataFrame({
-	 'slice' : Series(range(0,1 + resultstable['slice'].idxmax())),
-	 'xdrift' : driftx,
-	 'ydrift' : drifty
-	})
-	drift.to_csv("drift.csv")
-	mergedresults = pd.merge(left=resultstable,right=drift, how='left', left_on='slice', right_on='slice')
-	mergedresults = mergedresults.sort_values(by=['trajectory', 'slice'])
-	mergedresults['x3'] = mergedresults['x2'] - mergedresults['xdrift']
-	mergedresults['y3'] = mergedresults['y2'] - mergedresults['ydrift']
-	results = mergedresults.drop(['x2','y2', 'xdrift', 'ydrift'], axis=1)
-	fig, ax = plt.subplots()
-	ax.plot(drift.slice, drift.xdrift)
-	return results;
+def drift_subtractor(resultstable, exposuretime = 2):
+    resultstable.rename(columns={'particle':'trajectory'}, inplace=True)
+    resultstable.rename(columns={'frame':'slice'}, inplace=True)
+    resultstable = resultstable.sort_values(by=['trajectory', 'slice'])
+    resultstraj = resultstable.groupby(['trajectory'])
+    resultstable['x2'] = resultstraj['x'].transform(lambda bzz: bzz - bzz.mean())
+    resultstable['y2'] = resultstraj['y'].transform(lambda bzz: bzz - bzz.mean())
+    stuckslices = resultstable[resultstable['slice'] >= resultstable['slice'].max()]
+    stucktraj = resultstable[resultstable['trajectory'].isin(stuckslices['trajectory'])]
+    stuckgroupslice = stucktraj.groupby(['slice'])
+    driftx = stuckgroupslice['x2'].aggregate(np.median)
+    drifty = stuckgroupslice['y2'].aggregate(np.median)
+    drift = DataFrame({
+        'slice' : Series(range(0,1 + resultstable['slice'].idxmax())),
+        'rawx' : driftx,
+        'rawy' : drifty
+    })
+    drift['xdrift'] = drift['rawx'].rolling(window=5*exposuretime, center=True, min_periods=1).mean()
+    drift['ydrift'] = drift['rawy'].rolling(window=5*exposuretime, center = True, min_periods=1).mean()
+    drift.to_csv("drift.csv")
+    mergedresults = pd.merge(left=resultstable,right=drift, how='left', left_on='slice', right_on='slice')
+    mergedresults = mergedresults.sort_values(by=['trajectory', 'slice'])
+    mergedresults['x3'] = mergedresults['x2'] - mergedresults['xdrift']
+    mergedresults['y3'] = mergedresults['y2'] - mergedresults['ydrift']
+    results = mergedresults.drop(['x2','y2', 'xdrift', 'ydrift'], axis=1)
+    fig, ax = plt.subplots()
+    ax.plot(drift.slice, drift.xdrift)
+    return results
 	
 """ Finds the mean position at each point in time for trajectories which endure from the start to the finish, and then subtracts this drift from each trajectory.
 """
