@@ -28,7 +28,7 @@ def drift_subtractor(resultstable, exposuretime = 2):
     mergedresults = mergedresults.sort_values(by=['trajectory', 'slice'])
     mergedresults['x3'] = mergedresults['x2'] - mergedresults['xdrift']
     mergedresults['y3'] = mergedresults['y2'] - mergedresults['ydrift']
-    results = mergedresults.drop(['x2','y2', 'xdrift', 'ydrift'], axis=1)
+    results = mergedresults.drop(['x2','y2', 'rawx', 'rawy','xdrift', 'ydrift'], axis=1)
     fig, ax = plt.subplots()
     ax.plot(drift.slice, drift.xdrift)
     return results
