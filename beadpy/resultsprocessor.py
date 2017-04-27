@@ -84,6 +84,6 @@ def trajectory_renumber(resultstable):
 	return resultstable;
 	
 def flip_coordinates(resultstable, direction = 'x'):
-    maxval = results[direction].max()
+    maxval = resultstable[direction].max()
     resultstable[direction] = -1*resultstable[direction] + maxval
     return resultstable
