@@ -21,8 +21,8 @@ def drift_subtractor(resultstable, exposuretime = 0.5):
         'rawx' : driftx,
         'rawy' : drifty
     })
-    drift['xdrift'] = drift['rawx'].rolling(window=5*(1.0/exposuretime), center=True, min_periods=1).mean()
-    drift['ydrift'] = drift['rawy'].rolling(window=5*(1.0/exposuretime), center = True, min_periods=1).mean()
+    drift['xdrift'] = drift['rawx'].rolling(window=int(5*(1.0/exposuretime)), center=True, min_periods=1).mean()
+    drift['ydrift'] = drift['rawy'].rolling(window=int(5*(1.0/exposuretime)), center = True, min_periods=1).mean()
     drift.to_csv("drift.csv")
     mergedresults = pd.merge(left=resultstable,right=drift, how='left', left_on='slice', right_on='slice')
     mergedresults = mergedresults.sort_values(by=['trajectory', 'slice'])
