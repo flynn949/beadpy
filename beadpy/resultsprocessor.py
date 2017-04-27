@@ -4,7 +4,7 @@ from pandas import DataFrame, Series
 import matplotlib.pyplot as plt
 from itertools import chain
 
-def drift_subtractor(resultstable, exposuretime = params.exposuretime):
+def drift_subtractor(resultstable, exposuretime = 0.5):
     resultstable.rename(columns={'particle':'trajectory'}, inplace=True)
     resultstable.rename(columns={'frame':'slice'}, inplace=True)
     resultstable = resultstable.sort_values(by=['trajectory', 'slice'])
