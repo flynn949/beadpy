@@ -4,7 +4,7 @@ from pandas import DataFrame, Series
 import matplotlib.pyplot as plt
 from itertools import chain
 
-def drift_subtractor(resultstable, exposuretime = 2):
+def drift_subtractor(resultstable, exposuretime = params.exposuretime):
     resultstable.rename(columns={'particle':'trajectory'}, inplace=True)
     resultstable.rename(columns={'frame':'slice'}, inplace=True)
     resultstable = resultstable.sort_values(by=['trajectory', 'slice'])
@@ -21,8 +21,8 @@ def drift_subtractor(resultstable, exposuretime = 2):
         'rawx' : driftx,
         'rawy' : drifty
     })
-    drift['xdrift'] = drift['rawx'].rolling(window=5*exposuretime, center=True, min_periods=1).mean()
-    drift['ydrift'] = drift['rawy'].rolling(window=5*exposuretime, center = True, min_periods=1).mean()
+    drift['xdrift'] = drift['rawx'].rolling(window=5*(1.0/exposuretime), center=True, min_periods=1).mean()
+    drift['ydrift'] = drift['rawy'].rolling(window=5*(1.0/exposuretime), center = True, min_periods=1).mean()
     drift.to_csv("drift.csv")
     mergedresults = pd.merge(left=resultstable,right=drift, how='left', left_on='slice', right_on='slice')
     mergedresults = mergedresults.sort_values(by=['trajectory', 'slice'])
@@ -37,7 +37,7 @@ def drift_subtractor(resultstable, exposuretime = 2):
 """
 	
 def unit_converter(resultstable, exposuretime, ntconversion, micronpixel):
-	resultstable['time'] = resultstable['slice'] * exposuretime #For 250 ms frames.
+	resultstable['time'] = resultstable['slice'] * exposuretime
 	resultstable['nt'] = resultstable['x3']*ntconversion
 	resultstable['transverse'] = resultstable['y3'] * micronpixel
 	return resultstable;
@@ -62,7 +62,7 @@ def spurious_removal(resultstable):
 	
 def baseline(resultstable, exposuretime):
 	resultstraj = resultstable.groupby(['trajectory'])
-	nucleotides = resultstraj['nt'].transform(lambda bzz: bzz - bzz.head(150*int(exposuretime)).median())
+	nucleotides = resultstraj['nt'].transform(lambda bzz: bzz - bzz.head(150*int(1.0/exposuretime)).median())
 	resultstable['nucleotides'] = nucleotides
 	del resultstable['mass'], resultstable['nt'], resultstable['x3'], resultstable['y3']
 	return resultstable;
