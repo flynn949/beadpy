@@ -201,7 +201,8 @@ def binary_search(array, offset, length, sigma, OneMa):
     return line_fits;
     
 def segment_finder(datatable, xcolumn = 'time', ycolumn = 'nucleotides', indexcolumn = 'trajectory', sigma_start = 0, sigma_end = 100, sigma = 500, method = 'global', traj = 'none', returnsigma = 'no'):
-    
+    #The main function used to get changepoints
+
     datatable = datatable.reset_index(drop=True)
     
     if isinstance(traj, int):
