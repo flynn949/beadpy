@@ -94,7 +94,7 @@ The log likelihood ratio for a two line fit versus a single line fit.
 """
 	
 	
-@numba.jit(nopython=True)
+#@numba.jit(nopython=True)
 def changePoint(a, startX, endX, offset, sigma, OneMa):
 
     leng = len(a)
