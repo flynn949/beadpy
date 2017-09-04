@@ -15,12 +15,10 @@ def lsq(x,y):
     return np.linalg.lstsq(np.vstack([x, np.ones(len(x))]).T, y)[1][0];
 	
 """ Performs a least squares linear fit.
-
 Parameters
 ----------
 x: An array of time values.
 y: An array of nucleotides/position values.
-
 Returns
 -------
 The sum of squares for the least squares linear fit.
@@ -34,12 +32,10 @@ def ss2lines(j, a):
     return out;
 	
 """ Finds the combined sum of squares for a pair of least squares linear fits, one to the left of timepoint j and the other to the right of timepoint j.
-
 Parameters
 ----------
 j: The candidate changepoint.
 a: An array containing time in column 1 and nucleotides/position in column 0.
-
 Returns
 -------
 The combined sum of squares for the pair of least squares linear fits.
@@ -59,12 +55,10 @@ def confidenceThreshold( N, OneMa = 0.99):
     return root
 
 """ Calculates the critical value at a given confidence level and number of data points for the stastical significance of a log likelihood ratio of a two line fit versus a single line fit.
-
 Parameters
 ----------
 N: The number of timepoints
 OneMa: The confidence level.
-
 Returns
 -------
 The critical value.
@@ -74,54 +68,44 @@ The critical value.
 @jit
 def loglik(a, leng, ssval, sigma):
     segnull = lsq(a[:,0], a[:,1])
-    llnull = leng * np.log(1.0/sigma * 2.506628275) - segnull/(2 * sigma * sigma)
-    ll2lines = leng * np.log(1.0/sigma * 2.506628275) - ssval/(2 * sigma * sigma)
+    llnull = leng * np.log(1/sigma * 2.506628275) - segnull/(2 * sigma * sigma)
+    ll2lines = leng * np.log(1/sigma * 2.506628275) - ssval/(2 * sigma * sigma)
     loglik = -1 * (ll2lines - llnull)
     return loglik;
 	
 """ Calculates the log likelihood ratio for a two line fit around the candidate changepoint versus a single line fit ignoring the changepoint.
-
 Parameters
 ----------
 a: An array containing time in column 1 and nucleotides/position in column 0.
 leng: The number of timepoints in a.
 ssval: The combined sum of squares for the two line fit.
 sigma: The user-defined noise level.
-
 Returns
 -------
 The log likelihood ratio for a two line fit versus a single line fit.
 """
 	
 	
-#@numba.jit(nopython=True)
-def changePoint(a, startX, endX, offset, sigma, OneMa):
-
+@jit
+def changePoint(array, startX, endX, offset, sigma, OneMa):
+    a = array[startX - offset:endX - offset]
     leng = len(a)
     if (leng > 15):
-        mini = minimize_scalar(ss2lines, bounds =((a[:,0][startX - offset + 3]), (a[:,0][endX - offset - 1 - 3])), 
+        mini = minimize_scalar(ss2lines, bounds =((a[:,0][3]), (a[:,0][-3])), 
                                    method='bounded', args=(a))
-        testpoints = []
-        minlls = []
-        for i in range(-3,3):
-            tmpval = int(np.abs(a[:,0]-mini.x).argmin() + i)
-            testpoints.append(tmpval)
-            ssval = ss2lines(tmpval, a)
-            tmpminll = loglik(a, leng, ssval, sigma)
-            minlls.append(tmpminll)
-        minpos = minlls.index(min(minlls))
-        minll = min(minlls)
+            
+        minll = loglik(a, leng, mini.fun, sigma)
 
         if ((-2 * float(minll))**0.5) > confidenceThreshold(leng, OneMa):
-            chpt = testpoints[minpos] + offset #May need to subtract 1 here.
+            chpt = int(np.abs(array[:,0]-mini.x).argmin() + offset) #May need to subtract 1 here.
                     
         else:
             chpt = -1
     else:
         chpt = -1
     return chpt;
+	
 """ Uses a minimising function to search for the best candidate changepoint j at which the log likelihood ratio for a two line fit versus a single line fit is maximised. Then tests this log likelihood ratio against the appropriate critical value and returns the changepoint if it passes.
-
 Parameters
 ----------
 array: An array containing time in column 1 and nucleotides/position in column 0.
@@ -130,7 +114,6 @@ endX: The right-hand boundary of the interval to be tested.
 offset: The index value of the first row of the current trajectory in the array.
 sigma: The user-defined noise level.
 OneMa: The confidence level.
-
 Returns
 -------
 If the changepoint passes the significance test, the changepoint is returned as a row index. If it fails, -1 is returned.
@@ -153,13 +136,11 @@ def linefit(array, cp1, cp2):
     return m, c, x1, x2, y1, y2, displacement, duration, trajectorynumber;
 	
 """ Another least squares linear fit, this time returning many parameters to help build up the segments table.
-
 Parameters
 ----------
 array: An array containing time in column 1 and nucleotides/position in column 0.
 cp1: The changepoint which defines the start of the current segment.
 cp2: The changepoint which defines the end of the current segment.
-
 Returns
 -------
 Several parameters:
@@ -180,7 +161,7 @@ def binary_search(array, offset, length, sigma, OneMa):
     q = 0
     
     while (q < len(cp_positions) - 1):
-        cp = changePoint(array[offset:(offset + length - 1)],cp_positions[q], #should it be offset + length - 1?
+        cp = changePoint(array[offset:(offset + length - 1)],cp_positions[q],
                          cp_positions[q + 1], offset, sigma, OneMa)
         if (cp != -1):
             cp_positions.insert(q + 1, cp)
@@ -190,7 +171,7 @@ def binary_search(array, offset, length, sigma, OneMa):
     if (len(cp_positions) > 3):
         q = 0
         while (q < len(cp_positions) - 2):
-            cp = changePoint(array[offset:(offset + length - 1)],cp_positions[q], #should it be offset + length - 1?
+            cp = changePoint(array[offset:(offset + length - 1)],cp_positions[q],
                              cp_positions[q + 2],offset,  sigma, OneMa)
             cp_positions.pop(q + 1)
             if (cp != -1):
@@ -208,8 +189,7 @@ def binary_search(array, offset, length, sigma, OneMa):
     return line_fits;
     
 def segment_finder(datatable, xcolumn = 'time', ycolumn = 'nucleotides', indexcolumn = 'trajectory', sigma_start = 0, sigma_end = 100, sigma = 500, method = 'global', traj = 'none', returnsigma = 'no'):
-    #The main function used to get changepoints
-
+    
     datatable = datatable.reset_index(drop=True)
     
     if isinstance(traj, int):
