@@ -95,23 +95,34 @@ The log likelihood ratio for a two line fit versus a single line fit.
 	
 	
 @jit
-def changePoint(array, startX, endX, offset, sigma, OneMa):
-    a = array[startX - offset:endX - offset]
+def changePoint(a, startX, endX, offset, sigma, OneMa):
+
     leng = len(a)
-    if (leng > 15):
-        mini = minimize_scalar(ss2lines, bounds =((a[:,0][3]), (a[:,0][-3])), 
+    if (leng > 5):
+        mini = minimize_scalar(ss2lines, bounds =((a[:,0][startX - offset]), (a[:,0][endX - offset - 1])), 
                                    method='bounded', args=(a))
-            
-        minll = loglik(a, leng, mini.fun, sigma)
+        testpoints = []
+        minlls = []
+        ssvals = []
+        for i in range(-3,3):
+            tmpval = int(np.abs(a[:,0]-mini.x).argmin() + i)
+            testpoints.append(tmpval)
+            ssval = ss2lines(tmpval, a)
+            ssvals.append(ssval)
+            tmpminll = loglik(a, leng, ssval, sigma)
+            minlls.append(tmpminll)
+            tmpminll = 0
+        minpos = minlls.index(min(minlls))
+        minll = loglik(a, leng, testpoints[minpos], sigma)
 
         if ((-2 * float(minll))**0.5) > confidenceThreshold(leng, OneMa):
-            chpt = int(np.abs(array[:,0]-mini.x).argmin() + offset) #May need to subtract 1 here.
+            chpt = testpoints[minpos] + offset #May need to subtract 1 here.
                     
         else:
             chpt = -1
     else:
         chpt = -1
-    return chpt;
+    return chpt, mini.x, mini, testpoints, minlls, minll;
 	
 """ Uses a minimising function to search for the best candidate changepoint j at which the log likelihood ratio for a two line fit versus a single line fit is maximised. Then tests this log likelihood ratio against the appropriate critical value and returns the changepoint if it passes.
 
