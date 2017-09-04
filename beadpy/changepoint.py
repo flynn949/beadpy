@@ -173,7 +173,7 @@ def binary_search(array, offset, length, sigma, OneMa):
     q = 0
     
     while (q < len(cp_positions) - 1):
-        cp = changePoint(array[offset:(offset + length - 1)],cp_positions[q],
+        cp = changePoint(array[offset:(offset + length)],cp_positions[q], #should it be offset + length - 1?
                          cp_positions[q + 1], offset, sigma, OneMa)
         if (cp != -1):
             cp_positions.insert(q + 1, cp)
@@ -183,7 +183,7 @@ def binary_search(array, offset, length, sigma, OneMa):
     if (len(cp_positions) > 3):
         q = 0
         while (q < len(cp_positions) - 2):
-            cp = changePoint(array[offset:(offset + length - 1)],cp_positions[q],
+            cp = changePoint(array[offset:(offset + length)],cp_positions[q], #should it be offset + length - 1?
                              cp_positions[q + 2],offset,  sigma, OneMa)
             cp_positions.pop(q + 1)
             if (cp != -1):
