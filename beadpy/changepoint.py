@@ -103,17 +103,14 @@ def changePoint(a, startX, endX, offset, sigma, OneMa):
                                    method='bounded', args=(a))
         testpoints = []
         minlls = []
-        ssvals = []
         for i in range(-3,3):
             tmpval = int(np.abs(a[:,0]-mini.x).argmin() + i)
             testpoints.append(tmpval)
             ssval = ss2lines(tmpval, a)
-            ssvals.append(ssval)
             tmpminll = loglik(a, leng, ssval, sigma)
             minlls.append(tmpminll)
-            tmpminll = 0
         minpos = minlls.index(min(minlls))
-        minll = loglik(a, leng, testpoints[minpos], sigma)
+        minll = min(minlls)
 
         if ((-2 * float(minll))**0.5) > confidenceThreshold(leng, OneMa):
             chpt = testpoints[minpos] + offset #May need to subtract 1 here.
@@ -123,7 +120,6 @@ def changePoint(a, startX, endX, offset, sigma, OneMa):
     else:
         chpt = -1
     return chpt;
-	
 """ Uses a minimising function to search for the best candidate changepoint j at which the log likelihood ratio for a two line fit versus a single line fit is maximised. Then tests this log likelihood ratio against the appropriate critical value and returns the changepoint if it passes.
 
 Parameters
