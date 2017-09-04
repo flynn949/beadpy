@@ -68,8 +68,8 @@ The critical value.
 @jit
 def loglik(a, leng, ssval, sigma):
     segnull = lsq(a[:,0], a[:,1])
-    llnull = leng * np.log(1/sigma * 2.506628275) - segnull/(2 * sigma * sigma)
-    ll2lines = leng * np.log(1/sigma * 2.506628275) - ssval/(2 * sigma * sigma)
+    llnull = leng * np.log(1.0/sigma * 2.506628275) - segnull/(2 * sigma * sigma)
+    ll2lines = leng * np.log(1.0/sigma * 2.506628275) - ssval/(2 * sigma * sigma)
     loglik = -1 * (ll2lines - llnull)
     return loglik;
 	
@@ -86,18 +86,26 @@ The log likelihood ratio for a two line fit versus a single line fit.
 """
 	
 	
-@jit
-def changePoint(array, startX, endX, offset, sigma, OneMa):
-    a = array[startX - offset:endX - offset]
+def changePoint(a, startX, endX, offset, sigma, OneMa):
+    #endX is offset + length - 1, i.e. 99
+
     leng = len(a)
-    if (leng > 15):
-        mini = minimize_scalar(ss2lines, bounds =((a[:,0][3]), (a[:,0][-3])), 
+    if (leng > 5):
+        mini = minimize_scalar(ss2lines, bounds =((a[:,0][0]), (a[:,0][-1])), 
                                    method='bounded', args=(a))
-            
-        minll = loglik(a, leng, mini.fun, sigma)
+        testpoints = [0] * 7
+        minlls = [0] * 7
+        for i in range(7):
+            tmpval = int(np.abs(a[:,0]-mini.x).argmin() + (i - 3)) #-3 is so that we test a range of +/- 3 from the identified minimum
+            testpoints[i] = tmpval
+            ssval = ss2lines(tmpval, a)
+            tmpminll = loglik(a, leng, ssval, sigma)
+            minlls[i] = tmpminll
+        minpos = minlls.index(min(minlls))
+        minll = min(minlls)
 
         if ((-2 * float(minll))**0.5) > confidenceThreshold(leng, OneMa):
-            chpt = int(np.abs(array[:,0]-mini.x).argmin() + offset) #May need to subtract 1 here.
+            chpt = testpoints[minpos] + offset
                     
         else:
             chpt = -1
