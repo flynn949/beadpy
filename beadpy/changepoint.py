@@ -90,7 +90,7 @@ def changePoint(a, startX, endX, offset, sigma, OneMa):
     #endX is offset + length - 1, i.e. 99
 
     leng = len(a)
-    if (leng > 5):
+    if (leng > 15):
         mini = minimize_scalar(ss2lines, bounds =((a[:,0][3]), (a[:,0][-4])), 
                                    method='bounded', args=(a))
         testpoints = [0] * 7
