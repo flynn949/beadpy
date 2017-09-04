@@ -98,8 +98,8 @@ The log likelihood ratio for a two line fit versus a single line fit.
 def changePoint(a, startX, endX, offset, sigma, OneMa):
 
     leng = len(a)
-    if (leng > 5):
-        mini = minimize_scalar(ss2lines, bounds =((a[:,0][startX - offset]), (a[:,0][endX - offset - 1])), 
+    if (leng > 15):
+        mini = minimize_scalar(ss2lines, bounds =((a[:,0][startX - offset + 3]), (a[:,0][endX - offset - 1 - 3])), 
                                    method='bounded', args=(a))
         testpoints = []
         minlls = []
