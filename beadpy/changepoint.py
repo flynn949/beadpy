@@ -74,8 +74,8 @@ The critical value.
 @jit
 def loglik(a, leng, ssval, sigma):
     segnull = lsq(a[:,0], a[:,1])
-    llnull = leng * np.log(1/sigma * 2.506628275) - segnull/(2 * sigma * sigma)
-    ll2lines = leng * np.log(1/sigma * 2.506628275) - ssval/(2 * sigma * sigma)
+    llnull = leng * np.log(1.0/sigma * 2.506628275) - segnull/(2 * sigma * sigma)
+    ll2lines = leng * np.log(1.0/sigma * 2.506628275) - ssval/(2 * sigma * sigma)
     loglik = -1 * (ll2lines - llnull)
     return loglik;
 	
