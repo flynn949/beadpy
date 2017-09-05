@@ -118,7 +118,7 @@ If the changepoint passes the significance test, the changepoint is returned as 
 """
 	
 @jit
-def linefit(array, cp1, cp2):
+def linefit(array, cp1, cp2, cpt1, cpt2):
     x = array[cp1:cp2][:,0]
     y = array[cp1:cp2][:,1]
     a = np.vstack([x, np.ones(len(x))]).T
@@ -131,7 +131,7 @@ def linefit(array, cp1, cp2):
     duration = x2 - x1
     trajectorynumber = array[:,2][cp1]
     
-    return m, c, x1, x2, y1, y2, displacement, duration, trajectorynumber;
+    return m, c, x1, x2, y1, y2, displacement, duration, trajectorynumber, cpt1, cpt2; #duration is still integer
 	
 """ Another least squares linear fit, this time returning many parameters to help build up the segments table.
 Parameters
@@ -156,32 +156,49 @@ trajectorynumber: the number of the current trajectory.
 def binary_search(array, offset, length, sigma, OneMa):
          
     cp_positions = [offset, offset + length - 1]
+    cpt_positions = [array[offset,0], array[offset + length - 1,0]]
     q = 0
     
     while (q < len(cp_positions) - 1):
-        cp = changePoint(array[offset:(offset + length - 1)],cp_positions[q],
+        cps = changePoint(array[offset:(offset + length - 1)],cp_positions[q],
                          cp_positions[q + 1], offset, sigma, OneMa)
+        cp = cps[0]
+        cpt = cps[1]
+        
         if (cp != -1):
             cp_positions.insert(q + 1, cp)
+            cpt_positions.insert(q + 1, cpt)
         else:
             q += 1
 
     if (len(cp_positions) > 3):
         q = 0
         while (q < len(cp_positions) - 2):
-            cp = changePoint(array[offset:(offset + length - 1)],cp_positions[q],
+            cps = changePoint(array[offset:(offset + length - 1)],cp_positions[q],
                              cp_positions[q + 2],offset,  sigma, OneMa)
+            cp = cps[0]
+            cpt = cps[1]
+        
             cp_positions.pop(q + 1)
             if (cp != -1):
                 cp_positions.insert(q + 1, cp)
                 q += 1
-    
+                
+            cpt_positions.pop(q + 1)
+            if (cpt != -1):
+                cpt_positions.insert(q + 1, cpt)
+                q += 1                
+                
     if not cp_positions:
-        return 0;
+        return 0;  
+    
     else:
         line_fits = [0]
         for q in range(0,(len(cp_positions) - 1)):
-            line_fits.append(linefit(array[offset:(offset + length)], cp_positions[q] - offset, cp_positions[q + 1] - offset))
+            line_fits.append(linefit(array[offset:(offset + length)], cp_positions[q] - offset,
+                                                cp_positions[q + 1] - offset,
+                                               cpt_positions[q],
+                                               cpt_positions[q+1]))
         line_fits.pop(0)
         
     return line_fits;
@@ -230,8 +247,8 @@ def segment_finder(datatable, xcolumn = 'time', ycolumn = 'nucleotides', indexco
         del temp
         
         
-    collist = ['rate', 'intercept', 'x1', 'x2', 'y1', 'y2', 'displacement', 'duration', 'trajectory']
-    decimals = pd.Series([1,0,2,2,1,1,1,2,0], index = collist)
+    collist = ['rate', 'intercept', 'x1', 'x2', 'y1', 'y2', 'displacement', 'duration', 'trajectory', 'floatx1', 'floatx2']
+    decimals = pd.Series([1,0,2,2,1,1,1,2,0, 2, 2], index = collist)
     
     appended_data = []
     for i in range(0,len(cptable)):
