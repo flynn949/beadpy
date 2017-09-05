@@ -96,13 +96,16 @@ def changePoint(array, startX, endX, offset, sigma, OneMa):
         minll = loglik(a, leng, mini.fun, sigma)
 
         if ((-2 * float(minll))**0.5) > confidenceThreshold(leng, OneMa):
-            chpt = int(np.abs(array[:,0]-mini.x).argmin() + offset) #May need to subtract 1 here.
+            chpttime = mini.x
+            chpt = int(np.abs(array[:,0]-mini.x).argmin() + offset)
                     
         else:
             chpt = -1
+            chpttime = -1
     else:
         chpt = -1
-    return chpt;
+        chpttime = -1
+    return chpt, chpttime;
 """ Uses a minimising function to search for the best candidate changepoint j at which the log likelihood ratio for a two line fit versus a single line fit is maximised. Then tests this log likelihood ratio against the appropriate critical value and returns the changepoint if it passes.
 Parameters
 ----------
