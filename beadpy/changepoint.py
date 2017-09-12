@@ -51,7 +51,7 @@ def confidenceThreshold( N, OneMa = 0.99):
         h = num2/N
         T = np.log((1.-h * h)/(h * h))
         pfunc = lambda p: ((p * p)/2.) * np.exp(-(p * p)/2.) * (T - (2. * T)/(p * p) + 4./(p * p)) + OneMa - 1.
-        root = brentq(pfunc, 3.5, 5)
+        root = brentq(pfunc, 2, 7)
     return root
 
 """ Calculates the critical value at a given confidence level and number of data points for the stastical significance of a log likelihood ratio of a two line fit versus a single line fit.
