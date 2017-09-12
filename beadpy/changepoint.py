@@ -95,7 +95,7 @@ def changePoint(array, startX, endX, offset, sigma, OneMa):
             
         minll = loglik(a, leng, mini.fun, sigma)
 
-        if ((-2 * float(minll))**0.5) > confidenceThreshold(leng, OneMa):
+        if (np.sqrt(-2 * float(minll))) > confidenceThreshold(leng, OneMa):
             chpttime = mini.x
             chpt = int(np.abs(array[:,0]-mini.x).argmin() + offset)
                     
