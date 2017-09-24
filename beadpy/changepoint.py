@@ -187,11 +187,6 @@ def binary_search(array, offset, length, sigma, OneMa):
                 cp_positions.insert(q + 1, cp)
                 q += 1
                 
-            cpt_positions.pop(q + 1)
-            if (cpt != -1):
-                cpt_positions.insert(q + 1, cpt)
-                q += 1                
-                
     if not cp_positions:
         return 0;  
     
